@@ -1,0 +1,17 @@
+{
+  "name": "better-pivot",
+  "version": "1.0.0",
+  "description": "Chrome extension test suite",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "jest-environment-jsdom": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+}
