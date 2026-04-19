@@ -5,7 +5,7 @@
   "manifest_version": 3,
   "action": {
     "default_popup": "",
-    "default_icon": "hello_extensions.png"
+    "default_icon": "hitplay.png"
   },
   "content_scripts": [
     {
@@ -25,5 +25,11 @@
       "world": "MAIN",
       "run_at":"document_end"
     }
-  ]
+  ],
+  "icons": {
+    "16": "hitplay.png",
+    "32": "hitplay.png",
+    "48": "hitplay.png",
+    "128": "hitplay.png"
+  }
 }
