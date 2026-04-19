@@ -2,8 +2,13 @@
 
 This chrome extension adds some quality of life features to the UX of app.pivotnow.io
 1) *Go to room button*:Adds a button to go back to room checks list at the end of room checks , no need to press back 5 times or scroll all the way up to press the back arrow only to get sent to a different tab in the room
+   <img width="1558" height="551" alt="image" src="https://github.com/user-attachments/assets/71c49317-3029-4f8a-9b39-ecc66b80c050" />
 2) *Assetlist Excel Download*: Adds a button to download filtered device list data you are currently viewing as excel. No need to export the entire site from the locations tab , filter to whatever devices you want and extract away.
+<img width="583" height="181" alt="image" src="https://github.com/user-attachments/assets/13f28136-20d7-4cde-910f-84d18e19fcf2" />
 3) *Table column resizing*: Adds the ability to resize columns in device list view , don't need to hover over individual fields to read them if they don't fit in the default column width. The CSS also adjusts the column width so that on first load columns are sized to fit the content inside them.
+<img width="1491" height="308" alt="chrome_DPCnfzCTWE" src="https://github.com/user-attachments/assets/4bbc11ed-8704-427d-b389-747992c4b13f" />
+
+
 
 **Installation**
 
