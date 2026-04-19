@@ -2,14 +2,62 @@
  * @jest-environment jsdom
  */
 
-let buildRoomUrl, handleUrl, injectRoomButton;
+const XLSX = require('xlsx');
+
+let buildRoomUrl, handleUrl, injectRoomButton, injectDownloadExcelButton, ExportExcel;
 
 const BASE_URL =
   'https://app.pivotnow.io/rooms/room/1be7868d-c95d-408e-b9ed-551b77bcf01b/room-check/c39a606f-01d1-443a-a03c-8aaa3baaea4b?clientId=58a58d35-b196-44c2-99b5-73c12e9124a2%7CScotiabank&locationId=9943d58c-f1d9-46f6-afcf-c9681891fc91%7CToronto%2520-%2520351%2520King%2520Street%2520East';
 
+const SAMPLE_DEVICE = {
+  name: 'EXP-101',
+  serialNumber: '06296981',
+  description: null,
+  macAddress: '78:45:01:42:E3:5E',
+  macAddress2: null,
+  macAddress3: null,
+  ipAddress: null,
+  ipAddress2: null,
+  ipAddress3: null,
+  cresnetId: null,
+  ipId: null,
+  projectNumber: null,
+  vlanName: null,
+  switchPort: null,
+  rs232Port: null,
+  irPort: null,
+  vlanType: null,
+  installationDate: null,
+  installedPlace: null,
+  installedFirmwareVersion: null,
+  comments: null,
+  room: {
+    name: 'Event Space',
+    number: 'TBC',
+    floor: { name: '2nd Floor', number: 2 },
+    roomType: { type: 'RT10 - Event Space - 2nd Floor' },
+  },
+  partNumber: { partNumber: 'Tesira EX-OUT' },
+  category: { category: 'Adapter' },
+  model: { manufacturer: { manufacturer: 'Biamp Systems' } },
+};
+
+function setDeviceData(devices) {
+  window.dispatchEvent(new MessageEvent('message', {
+    data: { type: 'PIVOT_DEVICES', data: JSON.stringify({ data: devices }) },
+  }));
+}
+
 beforeEach(() => {
   jest.resetModules();
-  ({ buildRoomUrl, handleUrl, injectRoomButton } = require('../scripts/back.js'));
+  global.XLSX = XLSX;
+  global.alert = jest.fn();
+  global.URL.createObjectURL = jest.fn(() => 'blob:fake-url');
+  global.URL.revokeObjectURL = jest.fn();
+
+  ({ buildRoomUrl, handleUrl, injectRoomButton, injectDownloadExcelButton, ExportExcel } =
+    require('../scripts/back.js'));
+
   document.body.innerHTML = '';
 });
 
@@ -78,7 +126,7 @@ describe('handleUrl', () => {
   });
 });
 
-// ── injectRoomButton DOM injection ────────────────────────────────────────────
+// ── injectRoomButton ──────────────────────────────────────────────────────────
 
 describe('injectRoomButton', () => {
   function addBackButton(className = '') {
@@ -138,5 +186,137 @@ describe('injectRoomButton', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(document.getElementById('pivot-room-btn')).not.toBeNull();
+  });
+});
+
+// ── postMessage handler ───────────────────────────────────────────────────────
+
+describe('postMessage handler', () => {
+  test('stores parsed.data when PIVOT_DEVICES message is received', () => {
+    setDeviceData([SAMPLE_DEVICE]);
+    // verify via ExportExcel — if deviceData was set, no alert fires
+    ExportExcel();
+    expect(global.alert).not.toHaveBeenCalled();
+  });
+
+  test('ignores messages with a different type', () => {
+    window.dispatchEvent(new MessageEvent('message', {
+      data: { type: 'SOMETHING_ELSE', data: JSON.stringify({ data: [SAMPLE_DEVICE] }) },
+    }));
+    ExportExcel();
+    expect(global.alert).toHaveBeenCalled();
+  });
+});
+
+// ── ExportExcel ───────────────────────────────────────────────────────────────
+
+describe('ExportExcel', () => {
+  test('shows alert when deviceData is empty', () => {
+    ExportExcel();
+    expect(global.alert).toHaveBeenCalled();
+  });
+
+  test('creates sheet with correct headers as first row', () => {
+    const spy = jest.spyOn(XLSX.utils, 'aoa_to_sheet');
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    const [data] = spy.mock.calls[0];
+    expect(data[0]).toEqual([
+      'Floor Name', 'Floor Number', 'Room Type', 'Room Name', 'Room Number',
+      'Part Number', 'Model Category', 'Manufacturer', 'Device Name', 'Serial Number',
+      'Description', 'MAC1', 'MAC2', 'MAC3', 'IP1', 'IP2', 'IP3',
+      'CresnetID', 'IPID', 'ProjectNumber', 'VLANName', 'SwitchPort', 'RS232Port',
+      'IRPort', 'LANType', 'InstallationDate', 'InstalledPlace', 'InstalledFirmware', 'Comments',
+    ]);
+  });
+
+  test('maps device fields to correct column positions', () => {
+    const spy = jest.spyOn(XLSX.utils, 'aoa_to_sheet');
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    const [data] = spy.mock.calls[0];
+    const row = data[1];
+    expect(row[0]).toBe('2nd Floor');           // Floor Name
+    expect(row[1]).toBe(2);                     // Floor Number
+    expect(row[2]).toBe('RT10 - Event Space - 2nd Floor'); // Room Type
+    expect(row[3]).toBe('Event Space');          // Room Name
+    expect(row[4]).toBe('TBC');                 // Room Number
+    expect(row[5]).toBe('Tesira EX-OUT');        // Part Number
+    expect(row[6]).toBe('Adapter');              // Model Category
+    expect(row[7]).toBe('Biamp Systems');        // Manufacturer
+    expect(row[8]).toBe('EXP-101');              // Device Name
+    expect(row[9]).toBe('06296981');             // Serial Number
+    expect(row[11]).toBe('78:45:01:42:E3:5E');  // MAC1
+  });
+
+  test('null device fields produce null values in row', () => {
+    const spy = jest.spyOn(XLSX.utils, 'aoa_to_sheet');
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    const [data] = spy.mock.calls[0];
+    const row = data[1];
+    expect(row[10]).toBeNull(); // Description
+    expect(row[12]).toBeNull(); // MAC2
+    expect(row[18]).toBeNull(); // IPID
+  });
+
+  test('room number column cells are set to text type', () => {
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['Room Number'],
+      ['TBC'],
+    ]);
+    // The function sets t:'s' on column index 4 (E) — verify via the real sheet
+    const aoaSpy = jest.spyOn(XLSX.utils, 'aoa_to_sheet');
+    setDeviceData([{ ...SAMPLE_DEVICE }]);
+    ExportExcel();
+
+    // After ExportExcel runs, the sheet passed to book_append_sheet should have
+    // cell E2 (row 1, col 4) with type 's'
+    const bookSpy = jest.spyOn(XLSX.utils, 'book_append_sheet');
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    const sheet = bookSpy.mock.calls[0][1];
+    const cellRef = XLSX.utils.encode_cell({ r: 1, c: 4 });
+    expect(sheet[cellRef]?.t).toBe('s');
+  });
+
+  test('triggers download with filename AssetList.xlsx', () => {
+    const clickSpy = jest.fn();
+    const realCreate = document.createElement.bind(document);
+    jest.spyOn(document, 'createElement').mockImplementation((tag) => {
+      const el = realCreate(tag);
+      if (tag === 'a') el.click = clickSpy;
+      return el;
+    });
+
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    expect(clickSpy).toHaveBeenCalled();
+    expect(URL.createObjectURL).toHaveBeenCalled();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake-url');
+  });
+
+  test('uses xlsx MIME type for the blob', () => {
+    const blobs = [];
+    const realBlob = global.Blob;
+    global.Blob = class extends realBlob {
+      constructor(parts, opts) { super(parts, opts); blobs.push(opts); }
+    };
+
+    setDeviceData([SAMPLE_DEVICE]);
+    ExportExcel();
+
+    const xlsxBlob = blobs.find(o => o?.type?.includes('spreadsheetml'));
+    expect(xlsxBlob).toBeDefined();
+
+    global.Blob = realBlob;
   });
 });

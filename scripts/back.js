@@ -109,14 +109,6 @@ function injectDownloadExcelButton(url)
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-function csvCell(value) {
-  if (value == null) return '';
-  const str = String(value);
-  return str.includes(',') || str.includes('"') || str.includes('\n')
-    ? `"${str.replace(/"/g, '""')}"`
-    : str;
-}
-
 function ExportExcel() {
   if (!deviceData?.length) {
     alert('No device data available yet. Wait for the page to finish loading.');
@@ -132,48 +124,60 @@ function ExportExcel() {
   ];
 
   const rows = deviceData.map(d => [
-    d.room?.floor?.name,
-    d.room?.floor?.number,
-    d.room?.roomType?.type,
-    d.room?.name,
-    d.room?.number != null ? `'${d.room.number}` : null,//to deal with excel auto-formatting numbers as dates, we prepend a ' to force it to be text
-    d.partNumber?.partNumber,
-    d.category?.category,
-    d.model?.manufacturer?.manufacturer,
-    d.name,
-    d.serialNumber,
-    d.description,
-    d.macAddress,
-    d.macAddress2,
-    d.macAddress3,
-    d.ipAddress,
-    d.ipAddress2,
-    d.ipAddress3,
-    d.cresnetId,
-    d.ipId,
-    d.projectNumber,
-    d.vlanName,
-    d.switchPort,
-    d.rs232Port,
-    d.irPort,
-    d.vlanType,
-    d.installationDate,
-    d.installedPlace,
-    d.installedFirmwareVersion,
-    d.comments,
-  ].map(csvCell).join(','));
+    d.room?.floor?.name        ?? null,
+    d.room?.floor?.number      ?? null,
+    d.room?.roomType?.type     ?? null,
+    d.room?.name               ?? null,
+    d.room?.number             ?? null,
+    d.partNumber?.partNumber   ?? null,
+    d.category?.category       ?? null,
+    d.model?.manufacturer?.manufacturer ?? null,
+    d.name                     ?? null,
+    d.serialNumber             ?? null,
+    d.description              ?? null,
+    d.macAddress               ?? null,
+    d.macAddress2              ?? null,
+    d.macAddress3              ?? null,
+    d.ipAddress                ?? null,
+    d.ipAddress2               ?? null,
+    d.ipAddress3               ?? null,
+    d.cresnetId                ?? null,
+    d.ipId                     ?? null,
+    d.projectNumber            ?? null,
+    d.vlanName                 ?? null,
+    d.switchPort               ?? null,
+    d.rs232Port                ?? null,
+    d.irPort                   ?? null,
+    d.vlanType                 ?? null,
+    d.installationDate         ?? null,
+    d.installedPlace           ?? null,
+    d.installedFirmwareVersion ?? null,
+    d.comments                 ?? null,
+  ]);
 
-  const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // Force Room Number column (index 4, column E) to text so Excel doesn't reformat values
+  const roomNumberCol = 4;
+  rows.forEach((_, i) => {
+    const cellRef = XLSX.utils.encode_cell({ r: i + 1, c: roomNumberCol });
+    if (ws[cellRef]) ws[cellRef].t = 's';
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Asset List');
+
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'AssetList.csv';
+  a.download = 'AssetList.xlsx';
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { buildRoomUrl, handleUrl, injectRoomButton, injectDownloadExcelButton, ExportExcel, csvCell };
+  module.exports = { buildRoomUrl, handleUrl, injectRoomButton, injectDownloadExcelButton, ExportExcel };
 } else {
   handleUrl(location.href);
   navigation.addEventListener('navigate', (event) => {
