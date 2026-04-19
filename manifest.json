@@ -16,8 +16,14 @@
     },
     {
       "matches": ["https://app.pivotnow.io/*"],
-      "js": ["scripts/back.js"],
+      "js": ["scripts/xlsx.full.min.js", "scripts/back.js"],
       "world": "ISOLATED"
+    },
+    {
+      "matches": ["https://app.pivotnow.io/*"],
+      "js": ["scripts/tableresize.js"],
+      "world": "MAIN",
+      "run_at":"document_end"
     }
   ]
 }
