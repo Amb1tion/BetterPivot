@@ -12,10 +12,15 @@ This chrome extension adds some quality of life features to the UX of app.pivotn
 **Installation**
 
 1)Clone the repo (or download it as zip)
+
 2)Open chrome://extensions
+
 3)Toggle the developer mode button on the top right of the screen
 <img width="1897" height="277" alt="image" src="https://github.com/user-attachments/assets/3910998d-55cd-4cd3-ae94-d35353040176" />
 Once developer mode is enabled you should see a button to "Load unpacked"
-4) If you downloaded the zip file , extract it to a directory.
+
+4)If you downloaded the zip file , extract it to a directory.
+
 5)Click "Load unpacked" and select the directory
+
 Better pivot should now be installed and functioning , if you already had pivot open while installing go to the tab and hit ctrl+shift+r and enjoy the additional functionality.
