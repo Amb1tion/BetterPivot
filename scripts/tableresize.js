@@ -12,31 +12,33 @@ function addResizeHandles() {
     const unset = allThs.filter(th => !th.dataset.bpWidthSet);
 
     if (unset.length > 0 && allThs.length >= 2) {
-      const stored = tableWidths.get(table);
+      const stored = tableWidths.get(table) ?? [];
 
-      if (stored) {
-        // Re-apply previously measured widths — no reflow needed
-        table.style.tableLayout = 'fixed';
-        unset.forEach(th => {
-          const w = stored[th.cellIndex];
-          if (w) { th.style.width = w + 'px'; th.dataset.bpWidthSet = '1'; }
-        });
-      } else {
-        // First time: measure natural widths with a forced reflow
+      const canReapply  = unset.filter(th => stored[th.cellIndex] != null);
+      const needsMeasure = unset.filter(th => stored[th.cellIndex] == null);
+
+      // Re-apply known widths with no reflow
+      canReapply.forEach(th => {
+        th.style.width = stored[th.cellIndex] + 'px';
+        th.dataset.bpWidthSet = '1';
+      });
+
+      // Only reflow for genuinely new columns
+      if (needsMeasure.length > 0) {
         const maxColWidth = (table.parentElement?.offsetWidth || window.innerWidth) * 0.4;
         table.style.tableLayout = 'auto';
-        unset.forEach(th => { th.style.whiteSpace = 'nowrap'; th.style.width = ''; });
+        needsMeasure.forEach(th => { th.style.whiteSpace = 'nowrap'; th.style.width = ''; });
         void table.offsetWidth;
-        const widths = [];
-        unset.forEach(th => {
+        needsMeasure.forEach(th => {
           const w = Math.min(th.offsetWidth, maxColWidth);
           th.style.width = w + 'px';
           th.dataset.bpWidthSet = '1';
-          widths[th.cellIndex] = w;
+          stored[th.cellIndex] = w;
         });
-        tableWidths.set(table, widths);
-        table.style.tableLayout = 'fixed';
+        tableWidths.set(table, stored);
       }
+
+      table.style.tableLayout = 'fixed';
     } else if (unset.length === 0) {
       table.style.tableLayout = 'fixed';
     }
