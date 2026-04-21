@@ -14,8 +14,10 @@ function addResizeHandles() {
     if (unset.length > 0 && allThs.length >= 2) {
       const stored = tableWidths.get(table) ?? [];
 
-      const canReapply  = unset.filter(th => stored[th.cellIndex] != null);
-      const needsMeasure = unset.filter(th => stored[th.cellIndex] == null);
+      const MIN_COL_WIDTH = 60;
+
+      const canReapply   = unset.filter(th => stored[th.cellIndex] >= MIN_COL_WIDTH);
+      const needsMeasure = unset.filter(th => !(stored[th.cellIndex] >= MIN_COL_WIDTH));
 
       // Re-apply known widths with no reflow
       canReapply.forEach(th => {
@@ -23,14 +25,14 @@ function addResizeHandles() {
         th.dataset.bpWidthSet = '1';
       });
 
-      // Only reflow for genuinely new columns
+      // Reflow for new columns or any previously measured below the minimum (bad snapshot)
       if (needsMeasure.length > 0) {
         const maxColWidth = (table.parentElement?.offsetWidth || window.innerWidth) * 0.4;
         table.style.tableLayout = 'auto';
         needsMeasure.forEach(th => { th.style.whiteSpace = 'nowrap'; th.style.width = ''; });
         void table.offsetWidth;
         needsMeasure.forEach(th => {
-          const w = Math.min(th.offsetWidth, maxColWidth);
+          const w = Math.max(MIN_COL_WIDTH, Math.min(th.offsetWidth, maxColWidth));
           th.style.width = w + 'px';
           th.dataset.bpWidthSet = '1';
           stored[th.cellIndex] = w;
