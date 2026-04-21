@@ -7,32 +7,32 @@ function addResizeHandles() {
   tables.forEach(table => {
     table.style.borderCollapse = table.style.borderCollapse || 'collapse';
 
-    // Measure natural content widths before locking to fixed layout
-    table.style.tableLayout = 'auto';
-    table.querySelectorAll('th').forEach(th => {
-      if (!th.dataset.bpWidthSet) {
-        th.style.whiteSpace = 'nowrap';
-        th.style.width = '';
-      }
-    });
+    const allThs = Array.from(table.querySelectorAll('th'));
+    const unset = allThs.filter(th => !th.dataset.bpWidthSet);
 
-    // Force reflow so offsetWidth reflects content-fit widths
-    void table.offsetWidth;
+    // Wait until at least 2 columns have rendered before measuring
+    if (unset.length > 0 && allThs.length >= 2) {
+      const maxColWidth = (table.parentElement?.offsetWidth || window.innerWidth) * 0.4;
 
-    table.querySelectorAll('th').forEach(th => {
-      if (!th.dataset.bpWidthSet) {
-        th.style.width = th.offsetWidth + 'px';
+      table.style.tableLayout = 'auto';
+      unset.forEach(th => { th.style.whiteSpace = 'nowrap'; th.style.width = ''; });
+      void table.offsetWidth;
+      unset.forEach(th => {
+        th.style.width = Math.min(th.offsetWidth, maxColWidth) + 'px';
         th.dataset.bpWidthSet = '1';
-      }
-    });
-
-    table.style.tableLayout = 'fixed';
+      });
+      table.style.tableLayout = 'fixed';
+    } else if (unset.length === 0) {
+      table.style.tableLayout = 'fixed';
+    }
   });
 
   document.querySelectorAll('th').forEach(th => {
     if (th.querySelector('.' + HANDLE_CLASS)) return;
 
-    th.style.position = 'relative';
+    const isFrozen = th.style.left !== '' || th.style.right !== '';
+    th.style.position = isFrozen ? 'sticky' : 'relative';
+    if (isFrozen) th.style.zIndex = '1000';
     th.style.overflow = 'hidden';
     th.style.whiteSpace = 'nowrap';
 
@@ -56,10 +56,22 @@ function addResizeHandles() {
 
       const startX = e.pageX;
       const startWidth = th.offsetWidth;
+      const colIndex = th.cellIndex;
+      const totalCols = th.closest('tr').cells.length;
 
       const onMove = e => {
         const newWidth = Math.max(40, startWidth + (e.pageX - startX));
         th.style.width = newWidth + 'px';
+
+        // Sync matching column in all tables with the same column count
+        // (handles split header/body table layouts)
+        document.querySelectorAll('table').forEach(t => {
+          const firstRow = t.querySelector('tr');
+          if (!firstRow || firstRow.cells.length !== totalCols) return;
+          t.querySelectorAll(`tr > *:nth-child(${colIndex + 1})`).forEach(cell => {
+            if (cell !== th) cell.style.width = newWidth + 'px';
+          });
+        });
       };
 
       const onUp = () => {
