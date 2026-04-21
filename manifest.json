@@ -3,8 +3,9 @@
   "description": "A Chrome Extension to enhance the Pivot experience",
   "version": "1.0",
   "manifest_version": 3,
+  "permissions": ["storage"],
   "action": {
-    "default_popup": "",
+    "default_popup": "popup/popup.html",
     "default_icon": "hitplay.png"
   },
   "content_scripts": [
@@ -22,8 +23,8 @@
     {
       "matches": ["https://app.pivotnow.io/*"],
       "js": ["scripts/tableresize.js"],
-      "world": "MAIN",
-      "run_at":"document_end"
+      "world": "ISOLATED",
+      "run_at": "document_end"
     }
   ],
   "icons": {

@@ -87,6 +87,35 @@ function addResizeHandles() {
   });
 }
 
+function disable() {
+  if (activeObserver) {
+    activeObserver.disconnect();
+    activeObserver = null;
+  }
+
+  // Remove all resize handles
+  document.querySelectorAll('.' + HANDLE_CLASS).forEach(el => el.remove());
+
+  // Revert all th styles we applied so the page returns to normal
+  document.querySelectorAll('th').forEach(th => {
+    th.style.position = '';
+    th.style.overflow = '';
+    th.style.whiteSpace = '';
+    th.style.zIndex = '';
+    delete th.dataset.bpWidthSet;
+  });
+
+  // Revert table layout so the browser auto-sizes columns again
+  document.querySelectorAll('table').forEach(table => {
+    table.style.tableLayout = '';
+  });
+}
+
+function enable() {
+  if (activeObserver) return;
+  activeObserver = watchAndApply();
+}
+
 function watchAndApply() {
   let pending = null;
   const observer = new MutationObserver(() => {
@@ -99,9 +128,26 @@ function watchAndApply() {
   return observer;
 }
 
-let activeObserver = watchAndApply();
+let activeObserver = null;
+
+// Check stored preference on load — default to enabled
+chrome.storage.local.get({ resizeEnabled: true }, ({ resizeEnabled }) => {
+  if (resizeEnabled) activeObserver = watchAndApply();
+});
+
+// Listen for toggle messages from the popup
+chrome.runtime.onMessage.addListener(msg => {
+  if (msg.type !== 'BP_RESIZE_TOGGLE') return;
+  msg.enabled ? enable() : disable();
+});
 
 navigation.addEventListener('navigate', () => {
-  if (activeObserver) activeObserver.disconnect();
-  activeObserver = watchAndApply();
+  if (activeObserver) {
+    activeObserver.disconnect();
+    activeObserver = null;
+  }
+  // Re-check stored preference on navigation
+  chrome.storage.local.get({ resizeEnabled: true }, ({ resizeEnabled }) => {
+    if (resizeEnabled) activeObserver = watchAndApply();
+  });
 });
