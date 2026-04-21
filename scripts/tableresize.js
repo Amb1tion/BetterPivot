@@ -78,6 +78,10 @@ function addResizeHandles() {
         const newWidth = Math.max(40, startWidth + (e.pageX - startX));
         th.style.width = newWidth + 'px';
 
+        // Persist so re-application after scroll doesn't revert to original measurement
+        const stored = tableWidths.get(th.closest('table'));
+        if (stored) stored[colIndex] = newWidth;
+
         // Sync matching column in all tables with the same column count
         // (handles split header/body table layouts)
         document.querySelectorAll('table').forEach(t => {
@@ -86,6 +90,8 @@ function addResizeHandles() {
           t.querySelectorAll(`tr > *:nth-child(${colIndex + 1})`).forEach(cell => {
             if (cell !== th) cell.style.width = newWidth + 'px';
           });
+          const s = tableWidths.get(t);
+          if (s) s[colIndex] = newWidth;
         });
       };
 
