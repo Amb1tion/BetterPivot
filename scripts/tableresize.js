@@ -1,4 +1,5 @@
 const HANDLE_CLASS = 'bp-col-resize-handle';
+const tableWidths = new WeakMap(); // table → array of measured widths by column index
 
 function addResizeHandles() {
   const tables = document.querySelectorAll('table');
@@ -10,18 +11,32 @@ function addResizeHandles() {
     const allThs = Array.from(table.querySelectorAll('th'));
     const unset = allThs.filter(th => !th.dataset.bpWidthSet);
 
-    // Wait until at least 2 columns have rendered before measuring
     if (unset.length > 0 && allThs.length >= 2) {
-      const maxColWidth = (table.parentElement?.offsetWidth || window.innerWidth) * 0.4;
+      const stored = tableWidths.get(table);
 
-      table.style.tableLayout = 'auto';
-      unset.forEach(th => { th.style.whiteSpace = 'nowrap'; th.style.width = ''; });
-      void table.offsetWidth;
-      unset.forEach(th => {
-        th.style.width = Math.min(th.offsetWidth, maxColWidth) + 'px';
-        th.dataset.bpWidthSet = '1';
-      });
-      table.style.tableLayout = 'fixed';
+      if (stored) {
+        // Re-apply previously measured widths — no reflow needed
+        table.style.tableLayout = 'fixed';
+        unset.forEach(th => {
+          const w = stored[th.cellIndex];
+          if (w) { th.style.width = w + 'px'; th.dataset.bpWidthSet = '1'; }
+        });
+      } else {
+        // First time: measure natural widths with a forced reflow
+        const maxColWidth = (table.parentElement?.offsetWidth || window.innerWidth) * 0.4;
+        table.style.tableLayout = 'auto';
+        unset.forEach(th => { th.style.whiteSpace = 'nowrap'; th.style.width = ''; });
+        void table.offsetWidth;
+        const widths = [];
+        unset.forEach(th => {
+          const w = Math.min(th.offsetWidth, maxColWidth);
+          th.style.width = w + 'px';
+          th.dataset.bpWidthSet = '1';
+          widths[th.cellIndex] = w;
+        });
+        tableWidths.set(table, widths);
+        table.style.tableLayout = 'fixed';
+      }
     } else if (unset.length === 0) {
       table.style.tableLayout = 'fixed';
     }
@@ -108,6 +123,7 @@ function disable() {
   // Revert table layout so the browser auto-sizes columns again
   document.querySelectorAll('table').forEach(table => {
     table.style.tableLayout = '';
+    tableWidths.delete(table);
   });
 }
 
