@@ -19,6 +19,7 @@ const SAMPLE_DEVICE = {
   ipAddress: null,
   ipAddress2: null,
   ipAddress3: null,
+  hostname: 'EXP-101.local',
   cresnetId: null,
   ipId: null,
   projectNumber: null,
@@ -226,7 +227,7 @@ describe('ExportExcel', () => {
       'Floor Name', 'Floor Number', 'Room Type', 'Room Name', 'Room Number',
       'Part Number', 'Model Category', 'Manufacturer', 'Device Name', 'Serial Number',
       'Description', 'MAC1', 'MAC2', 'MAC3', 'IP1', 'IP2', 'IP3',
-      'CresnetID', 'IPID', 'ProjectNumber', 'VLANName', 'SwitchPort', 'RS232Port',
+      'Hostname', 'CresnetID', 'IPID', 'ProjectNumber', 'VLANName', 'SwitchPort', 'RS232Port',
       'IRPort', 'LANType', 'InstallationDate', 'InstalledPlace', 'InstalledFirmware', 'Comments',
     ]);
   });
@@ -238,17 +239,18 @@ describe('ExportExcel', () => {
 
     const [data] = spy.mock.calls[0];
     const row = data[1];
-    expect(row[0]).toBe('2nd Floor');           // Floor Name
-    expect(row[1]).toBe(2);                     // Floor Number
-    expect(row[2]).toBe('RT10 - Event Space - 2nd Floor'); // Room Type
-    expect(row[3]).toBe('Event Space');          // Room Name
-    expect(row[4]).toBe('TBC');                 // Room Number
-    expect(row[5]).toBe('Tesira EX-OUT');        // Part Number
-    expect(row[6]).toBe('Adapter');              // Model Category
-    expect(row[7]).toBe('Biamp Systems');        // Manufacturer
-    expect(row[8]).toBe('EXP-101');              // Device Name
-    expect(row[9]).toBe('06296981');             // Serial Number
-    expect(row[11]).toBe('78:45:01:42:E3:5E');  // MAC1
+    expect(row[0]).toBe('2nd Floor');                        // Floor Name
+    expect(row[1]).toBe(2);                                  // Floor Number
+    expect(row[2]).toBe('RT10 - Event Space - 2nd Floor');   // Room Type
+    expect(row[3]).toBe('Event Space');                      // Room Name
+    expect(row[4]).toBe('TBC');                              // Room Number
+    expect(row[5]).toBe('Tesira EX-OUT');                    // Part Number
+    expect(row[6]).toBe('Adapter');                          // Model Category
+    expect(row[7]).toBe('Biamp Systems');                    // Manufacturer
+    expect(row[8]).toBe('EXP-101');                          // Device Name
+    expect(row[9]).toBe('06296981');                         // Serial Number
+    expect(row[11]).toBe('78:45:01:42:E3:5E');               // MAC1
+    expect(row[17]).toBe('EXP-101.local');                   // Hostname
   });
 
   test('null device fields produce null values in row', () => {
@@ -260,7 +262,7 @@ describe('ExportExcel', () => {
     const row = data[1];
     expect(row[10]).toBeNull(); // Description
     expect(row[12]).toBeNull(); // MAC2
-    expect(row[18]).toBeNull(); // IPID
+    expect(row[19]).toBeNull(); // IPID (shifted +1 by Hostname at 17)
   });
 
   test('room number column cells are set to text type', () => {

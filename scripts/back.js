@@ -3,7 +3,7 @@ console.log('back.js injected at:', location.href);
 let lastHandled = null;
 let deviceData = null;
 
-window.addEventListener('message', (e) => {
+window.addEventListener('message', (e) => {//listens for device data request from pivot api server to DOM and saves it to variable deviceData
   if (e.data?.type === 'PIVOT_DEVICES') {
     const parsed = JSON.parse(e.data.data);
     deviceData = parsed.data;
@@ -25,7 +25,7 @@ function handleUrl(url) {
   }
 }
 
-function buildRoomUrl(url) {
+function buildRoomUrl(url) {//makes url for the room page to navigate to room checks tab
   const parsed = new URL(url);
   parsed.pathname = parsed.pathname.replace(/\/room-check\/[^/]+$/, '');
   parsed.searchParams.append('tab', '4');
@@ -51,7 +51,7 @@ function injectRoomButton(url) {
 
   if (tryInject()) return;
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver(() => {//observe dom changes to see if page has loaded and then inject go to room button
     if (tryInject()) observer.disconnect();
   });
   observer.observe(document.body, { childList: true, subtree: true });
@@ -62,32 +62,30 @@ function injectDownloadExcelButton(url)
 
     function tryInject() {
         if (document.getElementById('pivot-download-btn')) return true;
-        const SearchInput = document.getElementById('devicesSearch');
+        const SearchInput = document.getElementById('devicesSearch');//wait for search button to load in dom
         if (!SearchInput) return false;
 
-        if (!document.getElementById('pivot-styles')) {
-          const style = document.createElement('style');
-          style.id = 'pivot-styles';
-          style.textContent = `
-            #pivot-download-btn {
-              display: inline-flex;
-              align-items: center;
-              gap: 6px;
-              padding: 6px 14px;
-              font-size: 14px;
-              font-family: inherit;
-              border: 1px solid #b0c4b0;
-              border-radius: 6px;
-              background: #fff;
-              color: #3a5a3a;
-              cursor: pointer;
-              transition: background 0.15s, border-color 0.15s;
-            }
-            #pivot-download-btn:hover { background: #edf4ed; border-color: #7aaa7a; }
-            #pivot-download-btn:active { background: #d6ead6; }
-          `;
-          document.head.appendChild(style);
-        }
+        const style = document.createElement('style');
+        style.id = 'pivot-styles';//create a style for the button
+        style.textContent = `
+          #pivot-download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            border: 1px solid #b0c4b0;
+            border-radius: 6px;
+            background: #fff;
+            color: #3a5a3a;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+          }
+          #pivot-download-btn:hover { background: #edf4ed; border-color: #7aaa7a; }
+          #pivot-download-btn:active { background: #d6ead6; }
+        `;
+        document.head.appendChild(style);
 
         const btn = document.createElement('button');
         btn.id = 'pivot-download-btn';
@@ -103,7 +101,7 @@ function injectDownloadExcelButton(url)
 
   if (tryInject()) return;
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver(() => {//observe dom changes to see if page has loaded and then inject download button
     if (tryInject()) observer.disconnect();
   });
   observer.observe(document.body, { childList: true, subtree: true });
@@ -119,7 +117,7 @@ function ExportExcel() {
     'Floor Name', 'Floor Number', 'Room Type', 'Room Name', 'Room Number',
     'Part Number', 'Model Category', 'Manufacturer', 'Device Name', 'Serial Number',
     'Description', 'MAC1', 'MAC2', 'MAC3', 'IP1', 'IP2', 'IP3',
-    'CresnetID', 'IPID', 'ProjectNumber', 'VLANName', 'SwitchPort', 'RS232Port',
+    'Hostname', 'CresnetID', 'IPID', 'ProjectNumber', 'VLANName', 'SwitchPort', 'RS232Port',
     'IRPort', 'LANType', 'InstallationDate', 'InstalledPlace', 'InstalledFirmware', 'Comments'
   ];
 
@@ -141,6 +139,7 @@ function ExportExcel() {
     d.ipAddress                ?? null,
     d.ipAddress2               ?? null,
     d.ipAddress3               ?? null,
+    d.hostname                 ?? null,
     d.cresnetId                ?? null,
     d.ipId                     ?? null,
     d.projectNumber            ?? null,
